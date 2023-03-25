@@ -1,23 +1,3 @@
-"""
-Dispatch Server
-===============
-
-**The `Dispatch Server` implementation is a highly experimental feature** and is built on the dispatch model, where a
-single user-facing server consumes commands, but does not itself execute them. Instead, it "dispatches" those commands
-directly to a "worker", which is another server instance that could theoretically exist anywhere, even on a different
-machine within the same network.
-
-This allows for an architecture where a relatively weak machine can function as a dispatch server, while a series of
-much more powerful machines can run the individual "worker servers", which do the heavy lifting that engages lots of CPU
-or GPU.
-
-While a task is being run, or a worker is engaged, a worker is considered "engaged" and will not be acquired for any
-other task.
-
-If all workers are engaged, the dispatch server will issue a timeout result and tell the user that no worker could be
-engaged.
-
-"""
 import time
 import socket
 import functools
@@ -364,8 +344,7 @@ class DispatchServer(ServerBase):
         self.register_command(key=command_key, _callable=dispatch_command, skip_duplicates=True)
 
     # ------------------------------------------------------------------------------------------------------------------
-    def dispatch_command(self, key, *args, **kwargs):
-        # type: (str, list, dict) -> object
+    def dispatch_command(self, key: str, *args, **kwargs) -> object:
         if self._locked_workers.get(self.current_client) is not None:
             worker = self._locked_workers[self.current_client]
 
@@ -381,8 +360,7 @@ class DispatchServer(ServerBase):
         return result
 
     # ------------------------------------------------------------------------------------------------------------------
-    def broadcast_command(self, key, *args, **kwargs):
-        # type: (str, list, dict) -> object
+    def broadcast_command(self, key: str, *args, **kwargs) -> object:
         responses = list()
 
         for i in range(len(self.worker_pool)):
@@ -400,8 +378,7 @@ class DispatchServer(ServerBase):
         return responses
 
     # ------------------------------------------------------------------------------------------------------------------
-    def get_command(self, key):
-        # type: (str) -> ServerCommand
+    def get_command(self, key: str) -> ServerCommand:
         if key in ['lock_worker', 'unlock_worker']:
             return self.commands.get(key)
 
@@ -416,19 +393,15 @@ class DispatchServer(ServerBase):
         return result
 
     # ------------------------------------------------------------------------------------------------------------------
-    def start(self, blocking=False):
-        # type: (bool) -> None
+    def start(self, blocking: bool = False) -> None:
         super(DispatchServer, self).start(blocking=False)
-
         if not blocking:
             return
-
         while not self.stopped:
             time.sleep(1.0)
 
     # ------------------------------------------------------------------------------------------------------------------
-    def construct_worker_proxy(self, host, port):
-        # type: (str, int) -> object
+    def construct_worker_proxy(self, host: str, port: int) -> ClientProxyBase:
         # -- create a copy, don't reuse the same instance
         handler = self.worker_handler.__class__(self.worker_handler.marshaller.__class__())
         return ClientProxyBase((host, port), handler)

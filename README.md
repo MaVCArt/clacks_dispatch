@@ -4,15 +4,17 @@ Extension library for `clacks` that implements a dispatch server model which wor
 This model is designed to deal with high-demand setups that have to process many requests, or setups that need to queue
 heavy operations that don't want to operate on the server machine.
 
-With the `dispatch` model, a user can set up a central "dispatch" server, which redirects incoming commands to a an 
-available slave server. While a slave is engaged, it cannot be acquired again until its last queued question is 
-complete and has returned a result to the dispatch server. This ensures that a slave server is never engaged by more
-than one parent server.
+**The `Dispatch Server` implementation is an experimental feature** and is built on the dispatch model, where a
+single user-facing server consumes commands, but does not itself execute them. Instead, it "dispatches" those commands
+directly to a "worker", which is another server instance that could theoretically exist anywhere, even on a different
+machine within the same network.
 
-## Example Setup
+This allows for an architecture where a relatively weak machine can function as a dispatch server, while a series of
+much more powerful machines can run the individual "worker servers", which do the heavy lifting that engages lots of CPU
+or GPU.
 
-One possible use case for this setup is a master dispatch server that aggregates information that is continuously built
-by all of its slaves. This build process could be very heavy, which would slow down the server's response time.
+While a task is being run, or a worker is engaged, a worker is considered "engaged" and will not be acquired for any
+other task.
 
-To keep this response time up, the dispatch server simply caches the built data, without building it itself. External
-clients can then request this data very quickly, without need to wait for the data in question to complete building.
+If all workers are engaged, the dispatch server will issue a timeout result and tell the user that no worker could be
+engaged.
