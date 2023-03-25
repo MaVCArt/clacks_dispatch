@@ -20,22 +20,22 @@ engaged.
 """
 import time
 import socket
-import typing
 import functools
 
-from clacks.core.server import ServerBase
-from clacks.core.server import ServerClient
-from clacks.core.proxy import ClientProxyBase
-from clacks.core.command import ServerCommand
-from clacks.core.handler import BaseRequestHandler
+from clacks import ServerBase, ServerClient, ClientProxyBase, ServerCommand, BaseRequestHandler
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 class DispatchServer(ServerBase):
 
     # ------------------------------------------------------------------------------------------------------------------
-    def __init__(self, identifier, worker_handler, start_queue=False, threaded_digest=True):
-        # type: (str, BaseRequestHandler, bool, bool) -> DispatchServer
+    def __init__(
+            self,
+            identifier: str,
+            worker_handler: BaseRequestHandler,
+            start_queue: bool = False,
+            threaded_digest: bool = True
+    ) -> None:
         """
         Create a dispatch server, opening a port on the given worker host at the given worker port number, for workers
         to register themselves on. This port is how workers let a server know they exist.
@@ -100,8 +100,14 @@ class DispatchServer(ServerBase):
         )
 
     # ------------------------------------------------------------------------------------------------------------------
-    def _respond(self, handler, connection, transaction_id, header_data, data):
-        # type: (BaseRequestHandler, socket.socket, str, dict, dict) -> None
+    def _respond(
+            self,
+            handler: BaseRequestHandler,
+            connection: socket.socket,
+            transaction_id: str,
+            header_data: dict,
+            data: dict
+    ) -> None:
         """
         From a given set of transaction data, respond to the provided request using the given handler and connection.
         This ensures that a request made on a connection is always responded to on that same connection, in the order
@@ -141,8 +147,7 @@ class DispatchServer(ServerBase):
         handler.respond(connection, transaction_id, response)
 
     # ------------------------------------------------------------------------------------------------------------------
-    def remove_client(self, client):
-        # type: (ServerClient) -> bool
+    def remove_client(self, client: ServerClient) -> bool:
         result = super(DispatchServer, self).remove_client(client)
         if client in self._locked_workers:
             self.release_worker(self._locked_workers[client])
@@ -150,8 +155,7 @@ class DispatchServer(ServerBase):
         return result
 
     # ------------------------------------------------------------------------------------------------------------------
-    def lock_worker(self):
-        # type: () -> None
+    def lock_worker(self) -> None:
         """
         Lock a worker to the current client. This ensures, that until the worker is unlocked, the given connection
         instance will always use the exact same worker when dispatching commands.
@@ -167,11 +171,9 @@ class DispatchServer(ServerBase):
         )
 
     # ------------------------------------------------------------------------------------------------------------------
-    def unlock_worker(self):
-        # type: () -> None
+    def unlock_worker(self) -> None:
         """
         Unlock the current connection's worker.
-
         :return: None
         """
         # -- if the worker has already been unlocked (for whatever reason), do not do anything.
@@ -188,8 +190,7 @@ class DispatchServer(ServerBase):
         del self._locked_workers[self.current_client]
 
     # ------------------------------------------------------------------------------------------------------------------
-    def release_worker(self, worker):
-        # type: (ClientProxyBase) -> None
+    def release_worker(self, worker: ClientProxyBase) -> None:
         """
         Release the given worker.
 
@@ -202,8 +203,7 @@ class DispatchServer(ServerBase):
         self.worker_pool.append(worker)
 
     # ------------------------------------------------------------------------------------------------------------------
-    def _acquire_worker(self):
-        # type: () -> ClientProxyBase | None
+    def _acquire_worker(self) -> ClientProxyBase | None:
         """
         Acquire a worker from the pool and lock it.
 
@@ -221,8 +221,7 @@ class DispatchServer(ServerBase):
         return worker
 
     # ------------------------------------------------------------------------------------------------------------------
-    def acquire_worker(self):
-        # type: () -> ClientProxyBase
+    def acquire_worker(self) -> ClientProxyBase:
         """
         Attempt to acquire a worker. Will retry 10 times in case all of them are temporarily busy, and wait 0.5 seconds
         between attempts, waiting for a total of 5 seconds before timing out.
@@ -251,7 +250,7 @@ class DispatchServer(ServerBase):
         return worker
 
     # ------------------------------------------------------------------------------------------------------------------
-    def worker_is_locked(self):
+    def worker_is_locked(self) -> bool:
         """
         Return True if the worker assigned to the current client is locked, False otherwise.
 
@@ -263,8 +262,7 @@ class DispatchServer(ServerBase):
         return False
 
     # ------------------------------------------------------------------------------------------------------------------
-    def deregister_worker(self, address):
-        # type: (tuple) -> None
+    def deregister_worker(self, address: tuple) -> None:
         """
         Deregister whatever worker is registered at the provided address.
 
@@ -273,7 +271,8 @@ class DispatchServer(ServerBase):
 
         :return: None
         """
-        assert isinstance(address, tuple), 'address must be a tuple, got %s!' % type(address)
+        if not isinstance(address, tuple):
+            raise TypeError(f'Address must be a tuple, got {type(address)}!')
 
         idx = None
 
@@ -282,7 +281,7 @@ class DispatchServer(ServerBase):
                 continue
 
             idx = self.worker_pool.index(worker)
-            self.logger.warning('De-registered worker %s' % worker)
+            self.logger.warning(f'De-registered worker {worker}')
 
         if idx is None:
             return
@@ -290,10 +289,9 @@ class DispatchServer(ServerBase):
         self.worker_pool.pop(idx)
 
     # ------------------------------------------------------------------------------------------------------------------
-    def register_worker(self, address):
-        # type: (tuple) -> None
+    def register_worker(self, address: tuple) -> None:
         """
-        Register a worker instance. This must be implemented by sub-classes, as the proxy type, handler and marshaller
+        Register a worker instance. This must be implemented by subclasses, as the proxy type, handler and marshaller
         are only known to the specific implementation.
 
         :param address: tuple of (host, port)
@@ -312,7 +310,7 @@ class DispatchServer(ServerBase):
         self.logger.warning('Registering worker %s' % worker_proxy)
         self.worker_pool.append(worker_proxy)
 
-        # -- extract commands from the worker proxy so we know which dispatch methods are available.
+        # -- extract commands from the worker proxy, so we know which dispatch methods are available.
         commands = worker_proxy.list_commands().response
 
         if commands is None:
@@ -333,9 +331,8 @@ class DispatchServer(ServerBase):
             self.construct_dispatch_command(command_info, command)
 
     # ------------------------------------------------------------------------------------------------------------------
-    def construct_dispatch_command(self, command_info, command):
-        # type: (dict, str) -> None
-        command_key = 'dispatch_%s' % command
+    def construct_dispatch_command(self, command_info: dict, command: str) -> None:
+        command_key = f'dispatch_{command}'
 
         # -- if the command already exists, skip it.
         if command_key in self.commands:
