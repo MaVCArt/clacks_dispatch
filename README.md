@@ -1,3 +1,5 @@
+```pip install git+https://github.com/MaVCArt/clacks_dispatch.git@main```
+
 # clacks_dispatch
 
 Extension library for `clacks` that implements a dispatch server model which works with master and slave servers.
