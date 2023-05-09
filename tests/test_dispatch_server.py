@@ -48,23 +48,18 @@ class TestServerTypes(unittest.TestCase):
     def test_dispatch(self):
         server_port = clacks.get_new_port('localhost')
 
-        handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
+        server_handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
+        worker_handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
+        proxy_handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
 
-        server = clacks_dispatch.DispatchServer(
-            'Dispatch Server Test',
-            handler,
-        )
+        server = clacks_dispatch.DispatchServer('Dispatch Server Test', worker_handler)
 
-        server.register_handler('localhost', server_port, handler)
+        server.register_handler('localhost', server_port, server_handler)
         server.register_interface_by_key('standard')
         server.register_interface_by_key('cmd_utils')
+        server.start(blocking=False)
 
-        thread = threading.Thread(target=server.start, group=None)
-        thread.daemon = True
-        thread.start()
-
-        parent_proxy = clacks.ClientProxyBase(('localhost', server_port), handler)
-        parent_proxy.register_interface_by_type('standard')
+        parent_proxy = clacks.ClientProxyBase(('localhost', server_port), proxy_handler)
 
         for i in range(5):
             self.create_worker(clacks.get_new_port('localhost'), parent_proxy)

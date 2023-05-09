@@ -1,3 +1,3 @@
-from .server import DispatchServer
-from .decorators import lock_worker
-from .worker import DispatchServerWorker
+from .core import DispatchServer
+from .core import lock_worker
+from .core import DispatchServerWorker
