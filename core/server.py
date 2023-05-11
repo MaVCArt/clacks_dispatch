@@ -116,7 +116,7 @@ class DispatchServer(ServerBase):
         for adapter in self.adapters.values():
             if adapter not in handler.adapters:
                 continue
-            adapter.server_pre_digest(handler, connection, transaction_id, header_data, data)
+            adapter.server_pre_digest(self, handler, connection, transaction_id, header_data, data)
 
         response = self.digest(handler, connection, transaction_id, header_data, data)
 
