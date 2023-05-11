@@ -2,6 +2,7 @@ import time
 import socket
 import functools
 
+from clacks.core.command import command_from_callable
 from clacks import ServerBase, ServerClient, ClientProxyBase, ServerCommand, BaseRequestHandler
 
 
@@ -340,7 +341,7 @@ class DispatchServer(ServerBase):
 
             setattr(func, key, value)
 
-        dispatch_command = ServerCommand.construct(interface=self, function=func)
+        dispatch_command = command_from_callable(interface=self, function=func, cls=ServerCommand)
         self.register_command(key=command_key, _callable=dispatch_command, skip_duplicates=True)
 
     # ------------------------------------------------------------------------------------------------------------------

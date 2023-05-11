@@ -94,21 +94,22 @@ class TestServerTypes(unittest.TestCase):
 
     # ------------------------------------------------------------------------------------------------------------------
     def test_dispatch_locked_worker(self):
-        handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
+        server_handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
+        proxy_handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
 
         server = clacks_dispatch.DispatchServer(
             'Dispatch Server Test',
-            handler,
+            server_handler,
         )
         server.register_interface_by_key('standard')
         server.register_interface_by_key('cmd_utils')
 
         server_port = clacks.get_new_port('localhost')
-        server.register_handler('localhost', server_port, handler)
+        server.register_handler('localhost', server_port, server_handler)
 
         server.start(blocking=False)
 
-        parent_proxy = clacks.ClientProxyBase(('localhost', server_port), handler)
+        parent_proxy = clacks.ClientProxyBase(('localhost', server_port), proxy_handler)
         parent_proxy.register_interface_by_type('standard')
 
         for i in range(5):
@@ -154,22 +155,23 @@ class TestServerTypes(unittest.TestCase):
 
     # ------------------------------------------------------------------------------------------------------------------
     def test_broadcast_command(self):
-        handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
+        server_handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
+        proxy_handler = clacks.SimpleRequestHandler(clacks.SimplePackageMarshaller())
 
         server = clacks_dispatch.DispatchServer(
             'Dispatch Server Test',
-            handler,
+            server_handler,
         )
 
         server.register_interface_by_key('standard')
         server.register_interface_by_key('cmd_utils')
 
         server_port = clacks.get_new_port('localhost')
-        server.register_handler('localhost', server_port, handler)
+        server.register_handler('localhost', server_port, server_handler)
 
         server.start(blocking=False)
 
-        parent_proxy = clacks.ClientProxyBase(('localhost', server_port), handler)
+        parent_proxy = clacks.ClientProxyBase(('localhost', server_port), proxy_handler)
         parent_proxy.register_interface_by_type('standard')
 
         workers = list()
