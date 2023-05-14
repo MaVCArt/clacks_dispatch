@@ -7,28 +7,32 @@ import clacks_dispatch
 
 
 # ----------------------------------------------------------------------------------------------------------------------
+class DispatchWorkerTestInterface(clacks.ServerInterface):
+
+    # ------------------------------------------------------------------------------------------------------------------
+    def message(self, msg):
+        self.server.messages.append(msg)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    def foo(self):
+        return self.server.identifier
+
+    # ------------------------------------------------------------------------------------------------------------------
+    def echo(self, arg):
+        return arg
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 class DispatchWorkerTest(clacks_dispatch.DispatchServerWorker):
 
     # ------------------------------------------------------------------------------------------------------------------
     def __init__(self, identifier, handler, address, parent_proxy):
         super(DispatchWorkerTest, self).__init__(identifier, handler, address, parent_proxy)
-        self.register_command('foo', self.foo)
-        self.register_command('echo', self.echo)
-        self.register_command('message', self.message)
+
+        interface = DispatchWorkerTestInterface()
+        self.register_interface('test', interface)
 
         self.messages = list()
-
-    # ------------------------------------------------------------------------------------------------------------------
-    def message(self, msg):
-        self.messages.append(msg)
-
-    # ------------------------------------------------------------------------------------------------------------------
-    def foo(self):
-        return self.identifier
-
-    # ------------------------------------------------------------------------------------------------------------------
-    def echo(self, arg):
-        return arg
 
 
 class TestServerTypes(unittest.TestCase):
@@ -71,7 +75,7 @@ class TestServerTypes(unittest.TestCase):
         identifiers = list()
         for i in range(10):
             # -- note how we call "foo" with a "dispatch_" prefix.
-            response = server.dispatch_foo()
+            response = server.get_command('dispatch_foo')()
             if response.traceback:
                 raise Exception(response.traceback)
             identifiers.append(response.response)
@@ -87,7 +91,7 @@ class TestServerTypes(unittest.TestCase):
             1.0,
             'string',
         ]:
-            response_data = server.dispatch_echo(data).response
+            response_data = server.get_command('dispatch_echo')(data).response
             assert response_data == data, 'Server did not respond with same data (%s -> %s)!' % (data, response_data)
 
         server.end()
@@ -127,7 +131,7 @@ class TestServerTypes(unittest.TestCase):
         identifiers = list()
         for i in range(10):
             # -- note how we call "foo" with a "dispatch_" prefix.
-            response = server.foo()
+            response = server.get_command('foo')()
             if response.traceback:
                 raise Exception(response.traceback)
             identifiers.append(response.response)
@@ -143,7 +147,7 @@ class TestServerTypes(unittest.TestCase):
             1.0,
             'string',
         ]:
-            response_data = server.echo(data)
+            response_data = server.get_command('echo')(data)
             assert response_data.response == data, 'worker did not respond with same data (%s -> %s)!' % (data, response_data.response)
 
         parent_proxy.unlock_worker()
