@@ -18,10 +18,13 @@ from clacks.core.handler import BaseRequestHandler
 # ----------------------------------------------------------------------------------------------------------------------
 class DispatchServerWorker(ServerBase):
 
+    _REQUIRED_INTERFACES = ['standard']
+
     # ------------------------------------------------------------------------------------------------------------------
     def __init__(self, identifier, handler, address, parent_proxy):
         # type: (str, BaseRequestHandler, tuple, ClientProxyBase) -> None
         super(DispatchServerWorker, self).__init__(identifier=identifier, start_queue=False)
+
         # -- instance the parent proxy connection, so there is two-way traffic
         self.parent = parent_proxy
 
